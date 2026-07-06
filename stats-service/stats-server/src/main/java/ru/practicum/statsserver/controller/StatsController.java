@@ -34,6 +34,12 @@ public class StatsController {
             @RequestParam(required = false) List<String> uris,
             @RequestParam(defaultValue = "false") Boolean unique) {
         log.info("GET /stats - start={}, end={}, uris={}, unique={}", start, end, uris, unique);
+
+        // Если uris — пустой список, превращаем в null
+        if (uris != null && uris.isEmpty()) {
+            uris = null;
+        }
+
         return statsService.getStats(start, end, uris, unique);
     }
 }
