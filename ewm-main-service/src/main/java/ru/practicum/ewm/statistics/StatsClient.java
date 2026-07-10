@@ -4,7 +4,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import ru.practicum.ewm.event.model.Event;
 import ru.practicum.statsservice.client.StatsClientImpl;
 import ru.practicum.statsservice.dto.EndpointHit;
 import java.time.LocalDateTime;

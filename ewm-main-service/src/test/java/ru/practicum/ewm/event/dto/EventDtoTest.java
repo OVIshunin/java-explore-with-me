@@ -49,20 +49,10 @@ class EventDtoTest {
 
     @Test
     void deserializeEventFullDto_shouldReturnValidObject() throws Exception {
-        String json = """
-                {
-                    "id": 1,
-                    "annotation": "Аннотация события",
-                    "description": "Описание события",
-                    "title": "Заголовок",
-                    "eventDate": "2026-12-31T15:10:05",
-                    "location": {"lat": 55.75, "lon": 37.62},
-                    "paid": true,
-                    "participantLimit": 10,
-                    "requestModeration": true,
-                    "state": "PENDING"
-                }
-                """;
+        String json = "{\"id\": 1, \"annotation\": \"Аннотация события\", \"description\": \"Описание события\", "
+                + "\"title\": \"Заголовок\", \"eventDate\": \"2026-12-31T15:10:05\", "
+                + "\"location\": {\"lat\": 55.75, \"lon\": 37.62}, \"paid\": true, "
+                + "\"participantLimit\": 10, \"requestModeration\": true, \"state\": \"PENDING\"}";
 
         EventFullDto result = objectMapper.readValue(json, EventFullDto.class);
 

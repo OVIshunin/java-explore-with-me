@@ -26,13 +26,7 @@ class UserDtoTest {
 
     @Test
     void deserializeUserDto_shouldReturnValidObject() throws Exception {
-        String json = """
-                {
-                    "id": 1,
-                    "name": "John Doe",
-                    "email": "john@example.com"
-                }
-                """;
+        String json = "{\"id\": 1, \"name\": \"John Doe\", \"email\": \"john@example.com\"}";
 
         UserDto result = objectMapper.readValue(json, UserDto.class);
 

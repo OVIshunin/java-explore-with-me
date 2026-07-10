@@ -3,9 +3,7 @@ package ru.practicum.ewm.compilation.dto;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import ru.practicum.ewm.event.dto.EventShortDto;
-
 import java.util.List;
-
 import static org.assertj.core.api.Assertions.assertThat;
 
 class CompilationDtoTest {
@@ -34,14 +32,7 @@ class CompilationDtoTest {
 
     @Test
     void deserializeCompilationDto_shouldReturnValidObject() throws Exception {
-        String json = """
-                {
-                    "id": 1,
-                    "title": "Летние концерты",
-                    "pinned": true,
-                    "events": []
-                }
-                """;
+        String json = "{\"id\": 1, \"title\": \"Летние концерты\", \"pinned\": true, \"events\": []}";
 
         CompilationDto result = objectMapper.readValue(json, CompilationDto.class);
 

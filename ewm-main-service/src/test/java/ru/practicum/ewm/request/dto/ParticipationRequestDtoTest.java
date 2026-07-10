@@ -40,15 +40,8 @@ class ParticipationRequestDtoTest {
 
     @Test
     void deserializeParticipationRequestDto_shouldReturnValidObject() throws Exception {
-        String json = """
-                {
-                    "id": 1,
-                    "event": 1,
-                    "requester": 2,
-                    "status": "PENDING",
-                    "created": "2026-07-10T11:30:00"
-                }
-                """;
+        String json = "{\"id\": 1, \"event\": 1, \"requester\": 2, \"status\": \"PENDING\", "
+                + "\"created\": \"2026-07-10T11:30:00\"}";
 
         ParticipationRequestDto result = objectMapper.readValue(json, ParticipationRequestDto.class);
 

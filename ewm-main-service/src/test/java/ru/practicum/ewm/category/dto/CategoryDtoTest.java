@@ -24,12 +24,7 @@ class CategoryDtoTest {
 
     @Test
     void deserializeCategoryDto_shouldReturnValidObject() throws Exception {
-        String json = """
-                {
-                    "id": 1,
-                    "name": "Концерты"
-                }
-                """;
+        String json = "{\"id\": 1, \"name\": \"Концерты\"}";
 
         CategoryDto result = objectMapper.readValue(json, CategoryDto.class);
 
