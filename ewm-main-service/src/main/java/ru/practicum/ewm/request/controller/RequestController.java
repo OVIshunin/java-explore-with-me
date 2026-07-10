@@ -6,7 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.ewm.request.dto.ParticipationRequestDto;
 import ru.practicum.ewm.request.service.RequestService;
-
+import ru.practicum.ewm.exception.ValidationException;
 import java.util.List;
 
 @Slf4j
@@ -26,8 +26,14 @@ public class RequestController {
     @ResponseStatus(HttpStatus.CREATED)
     public ParticipationRequestDto createRequest(
             @PathVariable Long userId,
-            @RequestParam Long eventId) {
+            @RequestParam(required = false) Long eventId) { // Явно указываем required=false для ручной проверки
         log.info("POST /users/{}/requests?eventId={}", userId, eventId);
+
+        // Ручная проверка на null
+        if (eventId == null) {
+            throw new ValidationException("Query param 'eventId' is required");
+        }
+
         return requestService.createRequest(userId, eventId);
     }
 

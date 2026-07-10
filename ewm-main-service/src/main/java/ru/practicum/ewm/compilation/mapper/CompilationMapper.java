@@ -18,10 +18,12 @@ public class CompilationMapper {
     private final EventMapper eventMapper;
 
     public Compilation toEntity(NewCompilationDto dto, List<Event> events) {
+        // Добавлена проверка на null для pinned
+        boolean pinned = dto.getPinned() != null && dto.getPinned();
         return Compilation.builder()
                 .title(dto.getTitle())
-                .pinned(dto.getPinned() != null ? dto.getPinned() : false)
-                .events(events)
+                .pinned(pinned)
+                .events(events != null ? events : List.of())
                 .build();
     }
 

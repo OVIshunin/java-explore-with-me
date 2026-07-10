@@ -9,6 +9,7 @@ import ru.practicum.ewm.event.model.EventState;
 import ru.practicum.ewm.event.repository.EventRepository;
 import ru.practicum.ewm.exception.ConflictException;
 import ru.practicum.ewm.exception.NotFoundException;
+import ru.practicum.ewm.exception.ValidationException;
 import ru.practicum.ewm.request.dto.EventRequestStatusUpdateRequest;
 import ru.practicum.ewm.request.dto.EventRequestStatusUpdateResult;
 import ru.practicum.ewm.request.dto.ParticipationRequestDto;
@@ -140,7 +141,7 @@ public class RequestServiceImpl implements RequestService {
 
         List<ParticipationRequest> requests = requestRepository.findAllById(updateRequest.getRequestIds());
 
-        // Проверяем, что все запросы относятся к этому событию
+        // Проверяем, что все запросы относятся к этому событию и имеют статус PENDING
         for (ParticipationRequest request : requests) {
             if (!request.getEvent().getId().equals(eventId)) {
                 throw new ConflictException("Request does not belong to this event");
@@ -154,11 +155,12 @@ public class RequestServiceImpl implements RequestService {
         List<ParticipationRequestDto> rejected = new ArrayList<>();
 
         if (updateRequest.getStatus() == RequestStatus.CONFIRMED) {
-            // Проверка лимита
+            //проверка на null participantLimit
+            int participantLimit = event.getParticipantLimit() != null ? event.getParticipantLimit() : 0;
             long currentConfirmed = requestRepository.countByEventIdAndStatus(eventId, RequestStatus.CONFIRMED);
-            long available = event.getParticipantLimit() - currentConfirmed;
+            long available = participantLimit - currentConfirmed;
 
-            if (event.getParticipantLimit() == 0 || available > 0) {
+            if (participantLimit == 0 || available > 0) {
                 for (ParticipationRequest request : requests) {
                     if (available > 0) {
                         request.setStatus(RequestStatus.CONFIRMED);
@@ -172,12 +174,14 @@ public class RequestServiceImpl implements RequestService {
             } else {
                 throw new ConflictException("Participant limit reached");
             }
-        } else {
-            // REJECTED
+        } else if (updateRequest.getStatus() == RequestStatus.REJECTED) {
             for (ParticipationRequest request : requests) {
                 request.setStatus(RequestStatus.REJECTED);
                 rejected.add(requestMapper.toDto(request));
             }
+        } else {
+            // Добавлена обработка неверного статуса
+            throw new ValidationException("Invalid status for update: " + updateRequest.getStatus());
         }
 
         requestRepository.saveAll(requests);

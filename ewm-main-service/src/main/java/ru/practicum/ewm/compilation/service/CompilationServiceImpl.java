@@ -12,6 +12,7 @@ import ru.practicum.ewm.compilation.dto.UpdateCompilationRequest;
 import ru.practicum.ewm.compilation.mapper.CompilationMapper;
 import ru.practicum.ewm.compilation.model.Compilation;
 import ru.practicum.ewm.compilation.repository.CompilationRepository;
+import ru.practicum.ewm.event.model.Event;
 import ru.practicum.ewm.event.repository.EventRepository;
 import ru.practicum.ewm.exception.NotFoundException;
 
@@ -33,18 +34,17 @@ public class CompilationServiceImpl implements CompilationService {
     public CompilationDto createCompilation(NewCompilationDto newCompilationDto) {
         log.info("Creating compilation: {}", newCompilationDto);
 
-        List<Long> eventIds = newCompilationDto.getEvents();
-        if (eventIds == null || eventIds.isEmpty()) {
-            Compilation compilation = compilationMapper.toEntity(newCompilationDto, List.of());
-            Compilation saved = compilationRepository.save(compilation);
-            return compilationMapper.toDto(saved);
+        // Проверка на null для событий
+        List<Long> eventIds = newCompilationDto.getEvents() != null ? newCompilationDto.getEvents() : List.of();
+        List<Event> events;
+
+        if (eventIds.isEmpty()) {
+            events = List.of();
+        } else {
+            events = eventRepository.findAllById(eventIds);
         }
 
-        Compilation compilation = compilationMapper.toEntity(
-                newCompilationDto,
-                eventRepository.findAllById(eventIds)
-        );
-
+        Compilation compilation = compilationMapper.toEntity(newCompilationDto, events);
         Compilation saved = compilationRepository.save(compilation);
         log.info("Compilation created with id: {}", saved.getId());
 

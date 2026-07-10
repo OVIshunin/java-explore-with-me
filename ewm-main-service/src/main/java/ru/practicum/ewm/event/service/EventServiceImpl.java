@@ -175,9 +175,13 @@ public class EventServiceImpl implements EventService {
         log.info("Getting requests for event id: {} by user id: {}", eventId, userId);
         checkUserExists(userId);
 
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("User not found"));
+
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new NotFoundException("Event not found"));
 
+        // Проверяем, что текущий пользователь (из метода) и есть инициатор
         if (!event.getInitiator().getId().equals(userId)) {
             throw new NotFoundException("Only initiator can view requests");
         }
