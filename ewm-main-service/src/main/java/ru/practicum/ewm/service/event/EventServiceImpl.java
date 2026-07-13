@@ -14,6 +14,7 @@ import ru.practicum.ewm.dto.event.EventShortDto;
 import ru.practicum.ewm.dto.event.NewEventDto;
 import ru.practicum.ewm.dto.event.UpdateEventAdminRequest;
 import ru.practicum.ewm.dto.event.UpdateEventUserRequest;
+import ru.practicum.ewm.exception.BadRequestException;
 import ru.practicum.ewm.exception.ConflictException;
 import ru.practicum.ewm.exception.NotFoundException;
 import ru.practicum.ewm.mapper.EventMapper;
@@ -60,7 +61,7 @@ public class EventServiceImpl implements EventService {
         // Проверяем дату события (не раньше чем через 2 часа)
         LocalDateTime now = LocalDateTime.now();
         if (dto.getEventDate().isBefore(now.plusHours(2))) {
-            throw new ConflictException("Event date must be at least 2 hours from now");
+            throw new BadRequestException("Event date must be at least 2 hours from now");
         }
 
         // Создаем локацию
@@ -134,7 +135,7 @@ public class EventServiceImpl implements EventService {
         if (request.getEventDate() != null) {
             // Проверяем дату (не раньше чем через 2 часа)
             if (request.getEventDate().isBefore(LocalDateTime.now().plusHours(2))) {
-                throw new ConflictException("Event date must be at least 2 hours from now");
+                throw new BadRequestException("Event date must be at least 2 hours from now");
             }
             event.setEventDate(request.getEventDate());
         }
@@ -297,7 +298,7 @@ public class EventServiceImpl implements EventService {
         if (request.getEventDate() != null) {
             // Проверяем дату (не раньше чем за час от публикации)
             if (request.getEventDate().isBefore(LocalDateTime.now().plusHours(1))) {
-                throw new ConflictException("Event date must be at least 1 hour from now for publication");
+                throw new BadRequestException("Event date must be at least 1 hour from now for publication");
             }
             event.setEventDate(request.getEventDate());
         }

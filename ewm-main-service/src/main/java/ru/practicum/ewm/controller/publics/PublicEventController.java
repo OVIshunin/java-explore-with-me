@@ -7,6 +7,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.ewm.dto.event.EventFullDto;
 import ru.practicum.ewm.dto.event.EventShortDto;
+import ru.practicum.ewm.exception.BadRequestException;
 import ru.practicum.ewm.service.event.EventService;
 import ru.practicum.ewm.service.integration.StatisticsIntegrationService;
 
@@ -37,6 +38,35 @@ public class PublicEventController {
         log.info("GET /events - Getting public events, text: {}, categories: {}, paid: {}, " +
                         "rangeStart: {}, rangeEnd: {}, onlyAvailable: {}, sort: {}, from: {}, size: {}",
                 text, categories, paid, rangeStart, rangeEnd, onlyAvailable, sort, from, size);
+
+        // 1. Проверка text - если передан, должен быть не пустым
+        if (text != null && text.trim().isEmpty()) {
+            throw new BadRequestException("Text parameter cannot be empty");
+        }
+
+        // 2. Проверка categories - если передан список, все id должны быть > 0
+        if (categories != null) {
+            for (Long catId : categories) {
+                if (catId == null || catId <= 0) {
+                    throw new BadRequestException("Category id must be positive");
+                }
+            }
+        }
+
+        // 3. Проверка диапазона дат
+        if (rangeStart != null && rangeEnd != null && rangeEnd.isBefore(rangeStart)) {
+            throw new BadRequestException("Range end must be after range start");
+        }
+
+        // 4. Проверка from и size
+        if (from < 0) {
+            throw new BadRequestException("From must be 0 or positive");
+        }
+        if (size <= 0) {
+            throw new BadRequestException("Size must be greater than 0");
+        }
+
+
 
         // Сохраняем статистику запроса
         statisticsService.saveHit(
