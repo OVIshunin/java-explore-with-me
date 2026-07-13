@@ -30,12 +30,21 @@ public class StatsController {
 
     @GetMapping("/stats")
     public List<ViewStats> getStats(
-            @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime start,
-            @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime end,
+            @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime start,
+            @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime end,
             @RequestParam(required = false) List<String> uris,
             @RequestParam(defaultValue = "false") Boolean unique) {
         log.info("GET /stats - start={}, end={}, uris={}, unique={}", start, end, uris, unique);
 
+        // Проверка обязательности параметров
+        if (start == null) {
+            throw new BadRequestException("Start date is required");
+        }
+        if (end == null) {
+            throw new BadRequestException("End date is required");
+        }
+
+        // Проверка, что start раньше end
         if (start.isAfter(end)) {
             throw new BadRequestException("Start date must be before end date");
         }
