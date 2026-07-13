@@ -63,7 +63,6 @@ public class EventMapper {
         }
 
         Long confirmedRequests = requestRepository.countConfirmedRequests(event.getId());
-        Long views = statisticsService.getViews(event.getId());
 
         return EventShortDto.builder()
                 .id(event.getId())
@@ -74,7 +73,7 @@ public class EventMapper {
                 .initiator(userMapper.toShortDto(event.getInitiator()))
                 .paid(event.getPaid())
                 .title(event.getTitle())
-                .views(views)
+                .views(event.getViews())
                 .build();
     }
 
@@ -84,7 +83,6 @@ public class EventMapper {
         }
 
         Long confirmedRequests = requestRepository.countConfirmedRequests(event.getId());
-        Long views = statisticsService.getViews(event.getId());
 
         return EventFullDto.builder()
                 .id(event.getId())
@@ -102,7 +100,7 @@ public class EventMapper {
                 .requestModeration(event.getRequestModeration())
                 .state(event.getState())
                 .title(event.getTitle())
-                .views(views)
+                .views(event.getViews())
                 .build();
     }
 
@@ -115,9 +113,6 @@ public class EventMapper {
         List<Long> eventIds = events.stream()
                 .map(Event::getId)
                 .collect(Collectors.toList());
-
-        // Получаем просмотры для всех событий одним запросом
-        Map<Long, Long> viewsMap = statisticsService.getViews(eventIds);
 
         // Получаем количество подтвержденных запросов для всех событий
         Map<Long, Long> confirmedRequestsMap = events.stream()
@@ -136,7 +131,7 @@ public class EventMapper {
                         .initiator(userMapper.toShortDto(event.getInitiator()))
                         .paid(event.getPaid())
                         .title(event.getTitle())
-                        .views(viewsMap.getOrDefault(event.getId(), 0L))
+                        .views(event.getViews())
                         .build())
                 .collect(Collectors.toList());
     }

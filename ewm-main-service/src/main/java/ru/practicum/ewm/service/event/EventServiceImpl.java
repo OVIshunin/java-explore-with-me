@@ -71,6 +71,7 @@ public class EventServiceImpl implements EventService {
         // Создаем событие
         Event event = eventMapper.toEntity(dto, userId);
         event.setLocation(location);
+        event.setViews(0L);
 
         Event savedEvent = eventRepository.save(event);
         log.info("Event created with id: {}", savedEvent.getId());
@@ -234,11 +235,15 @@ public class EventServiceImpl implements EventService {
     }
 
     @Override
+    @Transactional
     public EventFullDto getPublicEventById(Long eventId) {
         log.info("Getting public event by id: {}", eventId);
 
         Event event = eventRepository.findByIdAndState(eventId, EventState.PUBLISHED)
                 .orElseThrow(() -> new NotFoundException("Event with id " + eventId + " not found"));
+
+        event.setViews(event.getViews() + 1);
+        eventRepository.save(event);
 
         return eventMapper.toFullDto(event);
     }
@@ -359,13 +364,18 @@ public class EventServiceImpl implements EventService {
         Event event = eventRepository.findByIdAndState(eventId, EventState.PUBLISHED)
                 .orElseThrow(() -> new NotFoundException("Event with id " + eventId + " not found"));
 
-        // Сохраняем статистику просмотра
+        // 1. Увеличиваем счетчик просмотров
+        event.setViews(event.getViews() + 1);
+        eventRepository.save(event);  // <-- СОХРАНЯЕМ ИЗМЕНЕНИЕ
+
+        // 2. Сохраняем хит в stats-service для аналитики (асинхронно)
         statisticsService.saveHit(
                 null,
                 request.getRequestURI(),
                 request.getRemoteAddr()
         );
 
+        // 3. Возвращаем DTO с обновленными views
         return eventMapper.toFullDto(event);
     }
 }

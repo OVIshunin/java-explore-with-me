@@ -36,4 +36,5 @@ public interface EventService {
     EventFullDto updateAdminEvent(Long eventId, UpdateEventAdminRequest request);
 
     EventFullDto getPublicEventById(Long eventId, HttpServletRequest request);
+
 }
