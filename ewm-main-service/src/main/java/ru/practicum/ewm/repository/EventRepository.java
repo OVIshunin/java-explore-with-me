@@ -47,6 +47,43 @@ public interface EventRepository extends JpaRepository<Event, Long> {
                                  @Param("rangeEnd") LocalDateTime rangeEnd,
                                  Pageable pageable);
 
+    @Query(value = "SELECT * FROM events e " +
+            "WHERE (CAST(:users AS TEXT) IS NULL OR e.initiator_id IN (:users)) " +
+            "AND (CAST(:states AS TEXT) IS NULL OR e.state IN (:states)) " +
+            "AND (CAST(:categories AS TEXT) IS NULL OR e.category_id IN (:categories)) " +
+            "AND e.event_date >= COALESCE(CAST(:rangeStart AS TIMESTAMP), '2020-01-01') " +
+            "AND e.event_date <= COALESCE(CAST(:rangeEnd AS TIMESTAMP), '2099-12-31') " +
+            "ORDER BY e.event_date " +
+            "LIMIT :limit OFFSET :offset",
+            nativeQuery = true)
+    List<Event> findEventsByAdminNative(@Param("users") List<Long> users,
+                                        @Param("states") List<String> states,
+                                        @Param("categories") List<Long> categories,
+                                        @Param("rangeStart") LocalDateTime rangeStart,
+                                        @Param("rangeEnd") LocalDateTime rangeEnd,
+                                        @Param("limit") int limit,
+                                        @Param("offset") int offset);
+
+    @Query(value = "SELECT * FROM events e " +
+            "WHERE e.state = 'PUBLISHED' " +
+            "AND (CAST(:text AS TEXT) IS NULL OR LOWER(e.annotation) LIKE LOWER(CONCAT('%', CAST(:text AS TEXT), '%')) " +
+            "OR LOWER(e.description) LIKE LOWER(CONCAT('%', CAST(:text AS TEXT), '%'))) " +
+            "AND (CAST(:categories AS TEXT) IS NULL OR e.category_id IN (:categories)) " +
+            "AND (CAST(:paid AS TEXT) IS NULL OR e.paid = :paid) " +
+            "AND e.event_date >= COALESCE(CAST(:rangeStart AS TIMESTAMP), CURRENT_TIMESTAMP) " +
+            "AND e.event_date <= COALESCE(CAST(:rangeEnd AS TIMESTAMP), '2099-12-31') " +
+            "ORDER BY e.event_date " +
+            "LIMIT :limit OFFSET :offset",
+            nativeQuery = true)
+    List<Event> findEventsPublicNative(@Param("text") String text,
+                                       @Param("categories") List<Long> categories,
+                                       @Param("paid") Boolean paid,
+                                       @Param("rangeStart") LocalDateTime rangeStart,
+                                       @Param("rangeEnd") LocalDateTime rangeEnd,
+                                       @Param("limit") int limit,
+                                       @Param("offset") int offset);
+
+
     Optional<Event> findByIdAndState(Long eventId, EventState state);
 
     boolean existsByCategoryId(Long categoryId);

@@ -195,13 +195,16 @@ public class EventServiceImpl implements EventService {
             rangeEnd = LocalDateTime.now().plusYears(100);
         }
 
+        // Защита от null списков
+        if (categories == null || categories.isEmpty()) {
+            categories = null;
+        }
+
         // Создаем сортировку
-        Sort sortOrder;
         if (sort != null && sort.equalsIgnoreCase("VIEWS")) {
             // Для сортировки по просмотрам нужно получить все события и отсортировать в коде
-            Pageable pageable = PageRequest.of(0, from + size); // Запрашиваем с запасом
-            Page<Event> eventsPage = eventRepository.findEventsPublic(text, categories, paid, rangeStart, rangeEnd, pageable);
-            List<Event> events = eventsPage.getContent();
+            List<Event> events = eventRepository.findEventsPublicNative(
+                    text, categories, paid, rangeStart, rangeEnd, from + size, 0);
 
             // Получаем просмотры для всех событий
             List<Long> eventIds = events.stream().map(Event::getId).collect(Collectors.toList());
@@ -211,7 +214,7 @@ public class EventServiceImpl implements EventService {
             events.sort((e1, e2) -> {
                 Long v1 = viewsMap.getOrDefault(e1.getId(), 0L);
                 Long v2 = viewsMap.getOrDefault(e2.getId(), 0L);
-                return v2.compareTo(v1); // по убыванию
+                return v2.compareTo(v1);
             });
 
             // Применяем пагинацию вручную
@@ -223,10 +226,9 @@ public class EventServiceImpl implements EventService {
             return eventMapper.toShortDtoList(events);
         } else {
             // Сортировка по дате (по умолчанию)
-            sortOrder = Sort.by("eventDate").ascending();
-            Pageable pageable = PageRequest.of(from / size, size, sortOrder);
-            Page<Event> events = eventRepository.findEventsPublic(text, categories, paid, rangeStart, rangeEnd, pageable);
-            return eventMapper.toShortDtoList(events.getContent());
+            List<Event> events = eventRepository.findEventsPublicNative(
+                    text, categories, paid, rangeStart, rangeEnd, size, from);
+            return eventMapper.toShortDtoList(events);
         }
     }
 
@@ -260,20 +262,11 @@ public class EventServiceImpl implements EventService {
             rangeEnd = LocalDateTime.now().plusYears(100);
         }
 
-        // Преобразуем строковые статусы в Enum
-        List<EventState> eventStates = null;
-        if (states != null && !states.isEmpty()) {
-            eventStates = states.stream()
-                    .map(EventState::valueOf)
-                    .collect(Collectors.toList());
-        }
+        // Используем nativeQuery
+        List<Event> events = eventRepository.findEventsByAdminNative(
+                users, states, categories, rangeStart, rangeEnd, size, from);
 
-        Pageable pageable = PageRequest.of(from / size, size);
-
-        Page<Event> events = eventRepository.findEventsByAdmin(users, eventStates, categories,
-                rangeStart, rangeEnd, pageable);
-
-        return events.getContent().stream()
+        return events.stream()
                 .map(eventMapper::toFullDto)
                 .collect(Collectors.toList());
     }
