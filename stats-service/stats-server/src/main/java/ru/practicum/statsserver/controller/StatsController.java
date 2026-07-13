@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import ru.practicum.statsserver.exception.BadRequestException;
 import ru.practicum.statsservice.dto.EndpointHit;
 import ru.practicum.statsservice.dto.ViewStats;
 import ru.practicum.statsserver.service.StatsService;
@@ -34,6 +35,10 @@ public class StatsController {
             @RequestParam(required = false) List<String> uris,
             @RequestParam(defaultValue = "false") Boolean unique) {
         log.info("GET /stats - start={}, end={}, uris={}, unique={}", start, end, uris, unique);
+
+        if (start.isAfter(end)) {
+            throw new BadRequestException("Start date must be before end date");
+        }
 
         // Если uris — пустой список, превращаем в null
         if (uris != null && uris.isEmpty()) {
