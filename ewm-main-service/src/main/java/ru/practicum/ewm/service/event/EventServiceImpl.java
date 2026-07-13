@@ -1,5 +1,6 @@
 package ru.practicum.ewm.service.event;
 
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -187,8 +188,11 @@ public class EventServiceImpl implements EventService {
                 onlyAvailable, sort, from, size);
 
         // Если диапазон дат не указан, ищем события после текущего момента
-        if (rangeStart == null && rangeEnd == null) {
+        if (rangeStart == null) {
             rangeStart = LocalDateTime.now();
+        }
+        if (rangeEnd == null) {
+            rangeEnd = LocalDateTime.now().plusYears(100);
         }
 
         // Создаем сортировку
@@ -242,6 +246,19 @@ public class EventServiceImpl implements EventService {
                                              Integer from, Integer size) {
         log.info("Getting admin events with users: {}, states: {}, categories: {}, rangeStart: {}, rangeEnd: {}, " +
                 "from: {}, size: {}", users, states, categories, rangeStart, rangeEnd, from, size);
+
+        // Защита от null
+        if (users == null || users.isEmpty()) users = null;
+        if (states == null || states.isEmpty()) states = null;
+        if (categories == null || categories.isEmpty()) categories = null;
+
+        if (rangeStart == null) {
+            rangeStart = LocalDateTime.of(2020, 1, 1, 0, 0, 0);
+        }
+
+        if (rangeEnd == null) {
+            rangeEnd = LocalDateTime.now().plusYears(100);
+        }
 
         // Преобразуем строковые статусы в Enum
         List<EventState> eventStates = null;
@@ -339,5 +356,22 @@ public class EventServiceImpl implements EventService {
         log.info("Event id: {} updated by admin", eventId);
 
         return eventMapper.toFullDto(updatedEvent);
+    }
+
+    @Override
+    public EventFullDto getPublicEventById(Long eventId, HttpServletRequest request) {
+        log.info("Getting public event by id: {}", eventId);
+
+        Event event = eventRepository.findByIdAndState(eventId, EventState.PUBLISHED)
+                .orElseThrow(() -> new NotFoundException("Event with id " + eventId + " not found"));
+
+        // Сохраняем статистику просмотра
+        statisticsService.saveHit(
+                null,
+                request.getRequestURI(),
+                request.getRemoteAddr()
+        );
+
+        return eventMapper.toFullDto(event);
     }
 }

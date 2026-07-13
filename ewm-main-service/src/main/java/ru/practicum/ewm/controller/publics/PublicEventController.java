@@ -54,14 +54,6 @@ public class PublicEventController {
             @PathVariable Long id,
             HttpServletRequest request) {
         log.info("GET /events/{} - Getting public event by id", id);
-
-        // Сохраняем статистику запроса
-        statisticsService.saveHit(
-                null,
-                request.getRequestURI(),
-                request.getRemoteAddr()
-        );
-
-        return eventService.getPublicEventById(id);
+        return eventService.getPublicEventById(id, request);
     }
 }
