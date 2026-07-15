@@ -31,6 +31,8 @@ public class StatsServiceImpl implements StatsService {
         EndpointHitEntity entity = statsMapper.toEntity(hit);
         statsRepository.save(entity);
 
+        statsRepository.flush();
+
         log.debug("Hit saved with id: {}", entity.getId());
     }
 

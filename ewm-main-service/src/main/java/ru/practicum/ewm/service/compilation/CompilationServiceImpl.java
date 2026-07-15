@@ -17,6 +17,8 @@ import ru.practicum.ewm.model.Compilation;
 import ru.practicum.ewm.model.Event;
 import ru.practicum.ewm.repository.CompilationRepository;
 import ru.practicum.ewm.repository.EventRepository;
+import ru.practicum.ewm.util.OffsetPageRequest;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -103,7 +105,7 @@ public class CompilationServiceImpl implements CompilationService {
     public List<CompilationDto> getCompilations(Boolean pinned, Integer from, Integer size) {
         log.info("Getting compilations with pinned: {}, from: {}, size: {}", pinned, from, size);
 
-        Pageable pageable = PageRequest.of(from / size, size);
+        Pageable pageable = new OffsetPageRequest(from, size);
         Page<Compilation> compilations;
 
         if (pinned != null) {

@@ -26,4 +26,9 @@ public interface ParticipationRequestRepository extends JpaRepository<Participat
     @Query("SELECT r FROM ParticipationRequest r WHERE r.event.id = :eventId AND r.id IN :requestIds")
     List<ParticipationRequest> findByEventIdAndRequestIds(@Param("eventId") Long eventId,
                                                           @Param("requestIds") List<Long> requestIds);
+
+    @Query("SELECT r.event.id, COUNT(r) FROM ParticipationRequest r " +
+            "WHERE r.event.id IN :eventIds AND r.status = 'CONFIRMED' " +
+            "GROUP BY r.event.id")
+    List<Object[]> countConfirmedRequestsGroupedByEvent(@Param("eventIds") List<Long> eventIds);
 }

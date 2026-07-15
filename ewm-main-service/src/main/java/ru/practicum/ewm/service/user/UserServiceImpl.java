@@ -14,6 +14,7 @@ import ru.practicum.ewm.mapper.UserMapper;
 import ru.practicum.ewm.model.User;
 import ru.practicum.ewm.repository.EventRepository;
 import ru.practicum.ewm.repository.UserRepository;
+import ru.practicum.ewm.util.OffsetPageRequest;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -49,18 +50,21 @@ public class UserServiceImpl implements UserService {
     public List<UserDto> getUsers(List<Long> ids, Integer from, Integer size) {
         log.info("Getting users with ids: {}, from: {}, size: {}", ids, from, size);
 
-        Pageable pageable = PageRequest.of(from / size, size);
+        Pageable pageable = new OffsetPageRequest(from, size);
 
-        List<User> users;
         if (ids != null && !ids.isEmpty()) {
-            users = userRepository.findUsersByIds(ids);
+            // ids фильтруется вручную, так как findUsersByIds не поддерживает Pageable
+            List<User> users = userRepository.findUsersByIds(ids);
+            return users.stream()
+                    .skip(from)
+                    .limit(size)
+                    .map(userMapper::toDto)
+                    .collect(Collectors.toList());
         } else {
-            users = userRepository.findAll(pageable).getContent();
+            return userRepository.findAll(pageable).getContent().stream()
+                    .map(userMapper::toDto)
+                    .collect(Collectors.toList());
         }
-
-        return users.stream()
-                .map(userMapper::toDto)
-                .collect(Collectors.toList());
     }
 
     @Override

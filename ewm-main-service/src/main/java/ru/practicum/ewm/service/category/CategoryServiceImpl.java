@@ -14,6 +14,7 @@ import ru.practicum.ewm.mapper.CategoryMapper;
 import ru.practicum.ewm.model.Category;
 import ru.practicum.ewm.repository.CategoryRepository;
 import ru.practicum.ewm.repository.EventRepository;
+import ru.practicum.ewm.util.OffsetPageRequest;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -86,7 +87,7 @@ public class CategoryServiceImpl implements CategoryService {
     public List<CategoryDto> getCategories(Integer from, Integer size) {
         log.info("Getting categories with from: {}, size: {}", from, size);
 
-        Pageable pageable = PageRequest.of(from / size, size);
+        Pageable pageable = new OffsetPageRequest(from, size);
         return categoryRepository.findAll(pageable).getContent().stream()
                 .map(categoryMapper::toDto)
                 .collect(Collectors.toList());

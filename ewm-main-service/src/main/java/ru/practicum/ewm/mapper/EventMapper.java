@@ -5,6 +5,7 @@ import org.springframework.stereotype.Component;
 import ru.practicum.ewm.dto.event.EventFullDto;
 import ru.practicum.ewm.dto.event.EventShortDto;
 import ru.practicum.ewm.dto.event.NewEventDto;
+import ru.practicum.ewm.exception.NotFoundException;
 import ru.practicum.ewm.model.*;
 import ru.practicum.ewm.repository.CategoryRepository;
 import ru.practicum.ewm.repository.ParticipationRequestRepository;
@@ -34,10 +35,10 @@ public class EventMapper {
         }
 
         Category category = categoryRepository.findById(dto.getCategory())
-                .orElseThrow(() -> new RuntimeException("Category not found"));
+                .orElseThrow(() -> new NotFoundException("Category with id " + dto.getCategory() + " not found"));
 
         User initiator = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new NotFoundException("User with id " + userId + " not found"));
 
         Location location = locationMapper.toEntity(dto.getLocation());
 
@@ -63,6 +64,7 @@ public class EventMapper {
         }
 
         Long confirmedRequests = requestRepository.countConfirmedRequests(event.getId());
+        Long views = statisticsService.getViews(event.getId());
 
         return EventShortDto.builder()
                 .id(event.getId())
@@ -73,7 +75,7 @@ public class EventMapper {
                 .initiator(userMapper.toShortDto(event.getInitiator()))
                 .paid(event.getPaid())
                 .title(event.getTitle())
-                .views(event.getViews())
+                .views(views)
                 .build();
     }
 
@@ -83,6 +85,7 @@ public class EventMapper {
         }
 
         Long confirmedRequests = requestRepository.countConfirmedRequests(event.getId());
+        Long views = statisticsService.getViews(event.getId());
 
         return EventFullDto.builder()
                 .id(event.getId())
@@ -100,7 +103,7 @@ public class EventMapper {
                 .requestModeration(event.getRequestModeration())
                 .state(event.getState())
                 .title(event.getTitle())
-                .views(event.getViews())
+                .views(views)
                 .build();
     }
 
@@ -114,12 +117,11 @@ public class EventMapper {
                 .map(Event::getId)
                 .collect(Collectors.toList());
 
-        // Получаем количество подтвержденных запросов для всех событий
-        Map<Long, Long> confirmedRequestsMap = events.stream()
-                .collect(Collectors.toMap(
-                        Event::getId,
-                        e -> requestRepository.countConfirmedRequests(e.getId())
-                ));
+        // Получаем просмотры одним запросом
+        Map<Long, Long> viewsMap = statisticsService.getViews(eventIds);
+
+        // Получаем confirmedRequests одним запросом
+        Map<Long, Long> confirmedRequestsMap = getConfirmedRequestsMap(eventIds);
 
         return events.stream()
                 .map(event -> EventShortDto.builder()
@@ -131,8 +133,23 @@ public class EventMapper {
                         .initiator(userMapper.toShortDto(event.getInitiator()))
                         .paid(event.getPaid())
                         .title(event.getTitle())
-                        .views(event.getViews())
+                        .views(viewsMap.getOrDefault(event.getId(), 0L))
                         .build())
                 .collect(Collectors.toList());
+    }
+
+    private Map<Long, Long> getConfirmedRequestsMap(List<Long> eventIds) {
+        if (eventIds == null || eventIds.isEmpty()) {
+            return Map.of();
+        }
+
+        // Используем @Query в репозитории
+        List<Object[]> results = requestRepository.countConfirmedRequestsGroupedByEvent(eventIds);
+
+        return results.stream()
+                .collect(Collectors.toMap(
+                        row -> (Long) row[0],
+                        row -> (Long) row[1]
+                ));
     }
 }

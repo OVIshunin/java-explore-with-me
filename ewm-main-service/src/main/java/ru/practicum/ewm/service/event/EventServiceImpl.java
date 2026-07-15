@@ -25,6 +25,7 @@ import ru.practicum.ewm.repository.EventRepository;
 import ru.practicum.ewm.repository.LocationRepository;
 import ru.practicum.ewm.repository.UserRepository;
 import ru.practicum.ewm.service.integration.StatisticsIntegrationService;
+import ru.practicum.ewm.util.OffsetPageRequest;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -71,7 +72,6 @@ public class EventServiceImpl implements EventService {
         // Создаем событие
         Event event = eventMapper.toEntity(dto, userId);
         event.setLocation(location);
-        event.setViews(0L);
 
         Event savedEvent = eventRepository.save(event);
         log.info("Event created with id: {}", savedEvent.getId());
@@ -87,7 +87,7 @@ public class EventServiceImpl implements EventService {
             throw new NotFoundException("User with id " + userId + " not found");
         }
 
-        Pageable pageable = PageRequest.of(from / size, size, Sort.by("createdOn").descending());
+        Pageable pageable = new OffsetPageRequest(from, size, Sort.by("createdOn").descending());
         Page<Event> events = eventRepository.findByInitiatorId(userId, pageable);
 
         return events.getContent().stream()
@@ -234,19 +234,16 @@ public class EventServiceImpl implements EventService {
         }
     }
 
-    @Override
-    @Transactional
-    public EventFullDto getPublicEventById(Long eventId) {
-        log.info("Getting public event by id: {}", eventId);
-
-        Event event = eventRepository.findByIdAndState(eventId, EventState.PUBLISHED)
-                .orElseThrow(() -> new NotFoundException("Event with id " + eventId + " not found"));
-
-        event.setViews(event.getViews() + 1);
-        eventRepository.save(event);
-
-        return eventMapper.toFullDto(event);
-    }
+//    @Override
+//    @Transactional
+//    public EventFullDto getPublicEventById(Long eventId) {
+//        log.info("Getting public event by id: {}", eventId);
+//
+//        Event event = eventRepository.findByIdAndState(eventId, EventState.PUBLISHED)
+//                .orElseThrow(() -> new NotFoundException("Event with id " + eventId + " not found"));
+//
+//        return eventMapper.toFullDto(event);
+//    }
 
     @Override
     public List<EventFullDto> getAdminEvents(List<Long> users, List<String> states, List<Long> categories,
@@ -358,24 +355,20 @@ public class EventServiceImpl implements EventService {
     }
 
     @Override
+    @Transactional
     public EventFullDto getPublicEventById(Long eventId, HttpServletRequest request) {
         log.info("Getting public event by id: {}", eventId);
 
         Event event = eventRepository.findByIdAndState(eventId, EventState.PUBLISHED)
                 .orElseThrow(() -> new NotFoundException("Event with id " + eventId + " not found"));
 
-        // 1. Увеличиваем счетчик просмотров
-        event.setViews(event.getViews() + 1);
-        eventRepository.save(event);  // <-- СОХРАНЯЕМ ИЗМЕНЕНИЕ
-
-        // 2. Сохраняем хит в stats-service для аналитики (асинхронно)
+        //Сохраняем хит в stats-service для аналитики
         statisticsService.saveHit(
                 null,
                 request.getRequestURI(),
                 request.getRemoteAddr()
         );
 
-        // 3. Возвращаем DTO с обновленными views
         return eventMapper.toFullDto(event);
     }
 }

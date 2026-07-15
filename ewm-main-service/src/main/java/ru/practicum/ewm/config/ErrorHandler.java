@@ -91,11 +91,16 @@ public class ErrorHandler {
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ApiError handleTypeMismatch(MethodArgumentTypeMismatchException e) {
         log.error("Type mismatch: {}", e.getMessage());
+
+        String requiredType = e.getRequiredType() != null
+                ? e.getRequiredType().getSimpleName()
+                : "unknown";
+
         return ApiError.builder()
                 .status(HttpStatus.BAD_REQUEST)
                 .reason("Incorrectly made request.")
                 .message(String.format("Failed to convert value '%s' to required type '%s'",
-                        e.getValue(), e.getRequiredType().getSimpleName()))
+                        e.getValue(), requiredType))
                 .timestamp(LocalDateTime.now())
                 .errors(Collections.emptyList())
                 .build();

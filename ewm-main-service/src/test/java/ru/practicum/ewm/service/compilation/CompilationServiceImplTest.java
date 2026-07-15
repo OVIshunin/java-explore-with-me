@@ -155,7 +155,9 @@ class CompilationServiceImplTest {
     void getCompilations_withPinned_success() {
         Page<Compilation> compilationPage = new PageImpl<>(List.of(compilation));
 
-        when(compilationRepository.findByPinned(true, Pageable.ofSize(10))).thenReturn(compilationPage);
+        // Используем any(Pageable.class) вместо конкретного PageRequest
+        when(compilationRepository.findByPinned(eq(true), any(Pageable.class)))
+                .thenReturn(compilationPage);
         when(compilationMapper.toDto(compilation)).thenReturn(compilationDto);
 
         List<CompilationDto> result = compilationService.getCompilations(true, 0, 10);

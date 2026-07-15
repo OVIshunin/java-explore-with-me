@@ -118,7 +118,6 @@ class EventServiceImplTest {
                 .requestModeration(true)
                 .state(EventState.PENDING)
                 .title("Test Event")
-                .views(0L)
                 .build();
 
         eventFullDto = EventFullDto.builder()
@@ -168,15 +167,18 @@ class EventServiceImplTest {
     // ==================== getPublicEventById ====================
 
     @Test
-    void getPublicEventById_success_viewsIncremented() {
+    void getPublicEventById_success_savesHitToStats() {
         when(eventRepository.findByIdAndState(1L, EventState.PUBLISHED)).thenReturn(Optional.of(event));
         when(eventMapper.toFullDto(event)).thenReturn(eventFullDto);
+
+        // ДОБАВЛЯЕМ моки для request
+        when(request.getRequestURI()).thenReturn("/events/1");
+        when(request.getRemoteAddr()).thenReturn("127.0.0.1");
 
         EventFullDto result = eventService.getPublicEventById(1L, request);
 
         assertThat(result).isNotNull();
-        verify(eventRepository).save(event);
-        assertThat(event.getViews()).isEqualTo(1L);
+        verify(statisticsService).saveHit(null, "/events/1", "127.0.0.1");
     }
 
     @Test
