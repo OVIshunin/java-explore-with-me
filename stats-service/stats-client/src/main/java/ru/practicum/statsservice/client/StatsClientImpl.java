@@ -68,7 +68,7 @@ public class StatsClientImpl implements StatsClient {
             }
 
             // Строим URL - UriComponentsBuilder сам правильно закодирует параметры
-            String url = builder.build().encode().toUriString();
+            String url = builder.build().toUriString();
             log.debug("Request URL: {}", url);
 
             ResponseEntity<List<ViewStats>> response = restTemplate.exchange(
