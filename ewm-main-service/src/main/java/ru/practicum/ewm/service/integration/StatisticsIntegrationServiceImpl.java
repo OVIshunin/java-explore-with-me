@@ -54,7 +54,7 @@ public class StatisticsIntegrationServiceImpl implements StatisticsIntegrationSe
         LocalDateTime start = LocalDateTime.of(2020, 1, 1, 0, 0, 0);
         LocalDateTime end = LocalDateTime.now();
 
-        List<ViewStats> stats = statsClient.getStats(start, end, uris, false);
+        List<ViewStats> stats = statsClient.getStats(start, end, uris, true);
 
         // Преобразуем в Map<eventId, views>
         return stats.stream()
