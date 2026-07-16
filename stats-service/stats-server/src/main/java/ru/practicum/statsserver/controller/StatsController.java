@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import ru.practicum.statsserver.exception.BadRequestException;
 import ru.practicum.statsservice.dto.EndpointHit;
 import ru.practicum.statsservice.dto.ViewStats;
 import ru.practicum.statsserver.service.StatsService;
@@ -29,11 +30,24 @@ public class StatsController {
 
     @GetMapping("/stats")
     public List<ViewStats> getStats(
-            @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime start,
-            @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime end,
+            @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime start,
+            @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime end,
             @RequestParam(required = false) List<String> uris,
             @RequestParam(defaultValue = "false") Boolean unique) {
         log.info("GET /stats - start={}, end={}, uris={}, unique={}", start, end, uris, unique);
+
+        // Проверка обязательности параметров
+        if (start == null) {
+            throw new BadRequestException("Start date is required");
+        }
+        if (end == null) {
+            throw new BadRequestException("End date is required");
+        }
+
+        // Проверка, что start раньше end
+        if (start.isAfter(end)) {
+            throw new BadRequestException("Start date must be before end date");
+        }
 
         // Если uris — пустой список, превращаем в null
         if (uris != null && uris.isEmpty()) {

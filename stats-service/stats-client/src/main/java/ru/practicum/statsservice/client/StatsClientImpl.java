@@ -14,7 +14,7 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 import ru.practicum.statsservice.dto.EndpointHit;
 import ru.practicum.statsservice.dto.ViewStats;
-
+import java.util.Collections;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -49,23 +49,43 @@ public class StatsClientImpl implements StatsClient {
 
     @Override
     public List<ViewStats> getStats(LocalDateTime start, LocalDateTime end, List<String> uris, Boolean unique) {
-        log.info("Getting stats from {} to {}, uris={}, unique={}", start, end, uris, unique);
 
-        String url = UriComponentsBuilder.fromHttpUrl(statsServerUrl + "/stats")
-                .queryParam("start", start.format(FORMATTER))
-                .queryParam("end", end.format(FORMATTER))
-                .queryParam("uris", uris != null ? String.join(",", uris) : null)
-                .queryParam("unique", unique)
-                .toUriString();
+        try {
 
-        ResponseEntity<List<ViewStats>> response = restTemplate.exchange(
-                url,
-                HttpMethod.GET,
-                null,
-                new ParameterizedTypeReference<>() {}
-        );
+            log.info("Getting stats from {} to {}, uris={}, unique={}", start, end, uris, unique);
 
-        log.debug("Received {} stats records", response.getBody() != null ? response.getBody().size() : 0);
-        return response.getBody();
+            // Используем UriComponentsBuilder для правильного кодирования
+            UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(statsServerUrl + "/stats")
+                    .queryParam("start", start.format(FORMATTER))
+                    .queryParam("end", end.format(FORMATTER));
+
+            if (uris != null && !uris.isEmpty()) {
+                builder.queryParam("uris", String.join(",", uris));
+            }
+
+            if (unique != null) {
+                builder.queryParam("unique", unique);
+            }
+
+            // Строим URL - UriComponentsBuilder сам правильно закодирует параметры
+            String url = builder.build().toUriString();
+            log.debug("Request URL: {}", url);
+
+            ResponseEntity<List<ViewStats>> response = restTemplate.exchange(
+                    url,
+                    HttpMethod.GET,
+                    null,
+                    new ParameterizedTypeReference<>() {
+                    }
+            );
+
+            log.debug("Received {} stats records", response.getBody() != null ? response.getBody().size() : 0);
+            return response.getBody();
+
+        } catch (Exception e) {
+            log.error("Failed to get stats: {}", e.getMessage());
+            return Collections.emptyList();
+        }
+
     }
 }
