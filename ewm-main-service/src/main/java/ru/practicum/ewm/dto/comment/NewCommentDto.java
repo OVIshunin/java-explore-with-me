@@ -1,6 +1,7 @@
 package ru.practicum.ewm.dto.comment;
 
 
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -12,7 +13,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class NewCommentDto {
-
+    @NotBlank(message = "Text cannot be blank")
     @Size(min = 3, max = 7000, message = "Text must be between 3 and 7000 characters")
     private String text;
 }

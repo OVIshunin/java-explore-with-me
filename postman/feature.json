@@ -60,6 +60,10 @@
     {
       "key": "commentTextUpdated",
       "value": "Updated comment text with new information"
+    },
+    {
+      "key": "commentTextAnother",
+      "value": "Another comment text for testing"
     }
   ],
   "item": [
@@ -470,6 +474,48 @@
               "path": ["users", "{{user1Id}}", "comments", "events", "{{eventId}}"]
             }
           }
+        },
+        {
+          "name": "2.3 Создать комментарий - без поля text (ошибка 400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Статус ответа 400', function() {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test('Ошибка валидации - поле text обязательно', function() {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.status).to.eql('BAD_REQUEST');",
+                  "    pm.expect(jsonData.message).to.include('Text cannot be blank');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"text\": null\n}"
+            },
+            "url": {
+              "raw": "http://localhost:8080/users/{{user1Id}}/comments/events/{{eventId}}",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["users", "{{user1Id}}", "comments", "events", "{{eventId}}"]
+            }
+          }
         }
       ]
     },
@@ -582,7 +628,7 @@
           }
         },
         {
-          "name": "4.2 Опубликовать комментарий (администратор)",
+          "name": "4.2 Опубликовать комментарий (администратор) - commentId1",
           "event": [
             {
               "listen": "test",
@@ -624,7 +670,7 @@
           }
         },
         {
-          "name": "4.3 Отклонить комментарий (администратор)",
+          "name": "4.3 Отклонить комментарий (администратор) - commentId2",
           "event": [
             {
               "listen": "test",
@@ -719,10 +765,54 @@
       ]
     },
     {
-      "name": "6. Редактирование комментариев",
+      "name": "6. Редактирование комментариев (PENDING)",
       "item": [
         {
-          "name": "6.1 Редактировать свой комментарий (автор)",
+          "name": "6.1 Создать комментарий для редактирования (PENDING) - пользователь 1",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Статус ответа 201', function() {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test('Комментарий создан в статусе PENDING', function() {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('id');",
+                  "    pm.expect(jsonData).to.have.property('text', pm.variables.get('commentTextAnother'));",
+                  "});",
+                  "",
+                  "pm.environment.set('commentIdPending', pm.response.json().id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"text\": \"{{commentTextAnother}}\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:8080/users/{{user1Id}}/comments/events/{{eventId}}",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["users", "{{user1Id}}", "comments", "events", "{{eventId}}"]
+            }
+          }
+        },
+        {
+          "name": "6.2 Редактировать комментарий в статусе PENDING (должно быть разрешено)",
           "event": [
             {
               "listen": "test",
@@ -732,9 +822,9 @@
                   "    pm.response.to.have.status(200);",
                   "});",
                   "",
-                  "pm.test('Комментарий обновлен успешно', function() {",
+                  "pm.test('Комментарий обновлен, статус остался PENDING', function() {",
                   "    var jsonData = pm.response.json();",
-                  "    pm.expect(jsonData.id).to.eql(parseInt(pm.variables.get('commentId1')));",
+                  "    pm.expect(jsonData.id).to.eql(parseInt(pm.variables.get('commentIdPending')));",
                   "    pm.expect(jsonData.text).to.eql(pm.variables.get('commentTextUpdated'));",
                   "    pm.expect(jsonData).to.have.property('updatedOn');",
                   "    pm.expect(jsonData.author.id).to.eql(parseInt(pm.variables.get('user1Id')));",
@@ -757,6 +847,53 @@
               "raw": "{\n    \"text\": \"{{commentTextUpdated}}\"\n}"
             },
             "url": {
+              "raw": "http://localhost:8080/users/{{user1Id}}/comments/{{commentIdPending}}",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["users", "{{user1Id}}", "comments", "{{commentIdPending}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "7. Редактирование комментариев (PUBLISHED) - должно быть запрещено",
+      "item": [
+        {
+          "name": "7.1 Редактировать опубликованный комментарий (должно быть запрещено)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Статус ответа 409', function() {",
+                  "    pm.response.to.have.status(409);",
+                  "});",
+                  "",
+                  "pm.test('Ошибка - нельзя редактировать опубликованный комментарий', function() {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.status).to.eql('CONFLICT');",
+                  "    pm.expect(jsonData.message).to.include('Cannot edit published comment');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"text\": \"Trying to edit published comment\"\n}"
+            },
+            "url": {
               "raw": "http://localhost:8080/users/{{user1Id}}/comments/{{commentId1}}",
               "protocol": "http",
               "host": ["localhost"],
@@ -764,9 +901,14 @@
               "path": ["users", "{{user1Id}}", "comments", "{{commentId1}}"]
             }
           }
-        },
+        }
+      ]
+    },
+    {
+      "name": "8. Редактирование чужих комментариев",
+      "item": [
         {
-          "name": "6.2 Редактировать чужой комментарий (ошибка 409)",
+          "name": "8.1 Редактировать чужой комментарий (ошибка 409)",
           "event": [
             {
               "listen": "test",
@@ -810,10 +952,10 @@
       ]
     },
     {
-      "name": "7. Удаление комментариев",
+      "name": "9. Удаление комментариев",
       "item": [
         {
-          "name": "7.1 Удалить свой комментарий (автор)",
+          "name": "9.1 Удалить свой комментарий (автор)",
           "event": [
             {
               "listen": "test",
@@ -840,7 +982,7 @@
           }
         },
         {
-          "name": "7.2 Удалить чужой комментарий (ошибка 409)",
+          "name": "9.2 Удалить чужой комментарий (ошибка 409)",
           "event": [
             {
               "listen": "test",
@@ -875,10 +1017,10 @@
       ]
     },
     {
-      "name": "8. Административные операции с комментариями",
+      "name": "10. Административные операции с комментариями",
       "item": [
         {
-          "name": "8.1 Получить комментарии по статусу PUBLISHED",
+          "name": "10.1 Получить комментарии по статусу PUBLISHED",
           "event": [
             {
               "listen": "test",
@@ -929,7 +1071,7 @@
           }
         },
         {
-          "name": "8.2 Получить комментарии по статусу REJECTED",
+          "name": "10.2 Получить комментарии по статусу REJECTED",
           "event": [
             {
               "listen": "test",
@@ -980,7 +1122,7 @@
           }
         },
         {
-          "name": "8.3 Удалить комментарий администратором",
+          "name": "10.3 Удалить комментарий администратором",
           "event": [
             {
               "listen": "test",
@@ -998,11 +1140,11 @@
             "method": "DELETE",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/admin/comments/{{commentId1}}",
+              "raw": "http://localhost:8080/admin/comments/{{commentIdPending}}",
               "protocol": "http",
               "host": ["localhost"],
               "port": "8080",
-              "path": ["admin", "comments", "{{commentId1}}"]
+              "path": ["admin", "comments", "{{commentIdPending}}"]
             }
           }
         }

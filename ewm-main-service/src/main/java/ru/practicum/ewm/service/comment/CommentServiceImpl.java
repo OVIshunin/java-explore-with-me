@@ -21,7 +21,6 @@ import ru.practicum.ewm.repository.EventRepository;
 import ru.practicum.ewm.repository.UserRepository;
 import ru.practicum.ewm.util.OffsetPageRequest;
 
-
 import java.util.List;
 
 @Slf4j
@@ -57,20 +56,29 @@ public class CommentServiceImpl implements CommentService {
 
         Comment comment = getComment(commentId);
 
-        // Проверяем, что пользователь — автор
+        // Проверка: только автор может редактировать
         if (!comment.getAuthor().getId().equals(userId)) {
             throw new ConflictException("User is not the author of this comment");
         }
 
-        // Нельзя редактировать отклонённый комментарий
+        // Проверка: нельзя редактировать REJECTED
         if (comment.getStatus() == CommentStatus.REJECTED) {
             throw new ConflictException("Cannot edit rejected comment");
         }
 
-        comment.setText(dto.getText());
-        // Статус не меняется, updatedOn обновится автоматически через @UpdateTimestamp
+        // Проверка: нельзя редактировать PUBLISHED (требуется повторная модерация)
+        if (comment.getStatus() == CommentStatus.PUBLISHED) {
+            throw new ConflictException("Cannot edit published comment. Please delete and create a new one");
+        }
 
-        log.info("Comment updated: id={}", commentId);
+        // Проверка: можно редактировать только PENDING
+        if (comment.getStatus() != CommentStatus.PENDING) {
+            throw new ConflictException("Only pending comments can be edited");
+        }
+
+        comment.setText(dto.getText());
+        // Статус остаётся PENDING — требуется повторная модерация
+        log.info("Comment updated: id={}, status remains PENDING", commentId);
         return commentMapper.toDto(comment);
     }
 
@@ -85,14 +93,13 @@ public class CommentServiceImpl implements CommentService {
             throw new ConflictException("User is not the author of this comment");
         }
 
-        // Мягкое удаление
         comment.setStatus(CommentStatus.DELETED);
         log.info("Comment marked as DELETED: id={}", commentId);
     }
 
     @Override
     public List<CommentDto> getPublishedComments(Long eventId, int from, int size) {
-        log.info("Getting published comments for event: {}", eventId);
+        log.info("Getting published comments for event: {}, from={}, size={}", eventId, from, size);
 
         Pageable pageable = new OffsetPageRequest(from, size);
         List<Comment> comments = commentRepository.findByEventIdAndStatus(
@@ -105,7 +112,7 @@ public class CommentServiceImpl implements CommentService {
 
     @Override
     public List<AdminCommentDto> getCommentsByStatus(CommentStatus status, int from, int size) {
-        log.info("Getting comments by status: {}", status);
+        log.info("Getting comments by status: {}, from={}, size={}", status, from, size);
 
         Pageable pageable = new OffsetPageRequest(from, size);
         List<Comment> comments = commentRepository.findByStatus(status, pageable);
@@ -122,12 +129,10 @@ public class CommentServiceImpl implements CommentService {
 
         Comment comment = getComment(commentId);
 
-        // Админ может только PUBLISH или REJECT
         if (newStatus != CommentStatus.PUBLISHED && newStatus != CommentStatus.REJECTED) {
-            throw new IllegalArgumentException("Admin can only PUBLISH or REJECT comments");
+            throw new ConflictException("Admin can only PUBLISH or REJECT comments");
         }
 
-        // Нельзя менять статус у уже удалённого комментария
         if (comment.getStatus() == CommentStatus.DELETED) {
             throw new ConflictException("Cannot moderate deleted comment");
         }
@@ -168,6 +173,6 @@ public class CommentServiceImpl implements CommentService {
 
     private Comment getComment(Long commentId) {
         return commentRepository.findByIdWithDetails(commentId)
-                .orElseThrow(() -> new NotFoundException("Comment not found"));
+                .orElseThrow(() -> new NotFoundException("Comment with id=" + commentId + " not found"));
     }
 }
